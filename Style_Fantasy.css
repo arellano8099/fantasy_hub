@@ -43,6 +43,30 @@ input{
     color:#7CFC00;
 }
 
+.draft-sync-panel{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    max-width:1400px;
+    margin:0 auto 20px;
+    padding:12px 16px;
+    border:1px solid #38633b;
+    border-radius:10px;
+    background:#1b2b1c;
+    color:#d7f5d8;
+    font-size:14px;
+}
+
+.draft-auth-form{ display:flex; gap:8px; align-items:center; }
+.draft-auth-form input{ width:160px; margin:0; padding:9px; }
+.draft-auth-form button, .draft-sync-panel > button{
+    width:auto; margin:0; padding:9px 11px; border:0; border-radius:8px;
+    background:#7CFC00; color:#121212; font-weight:bold; cursor:pointer; white-space:nowrap;
+}
+.draft-sync-panel > button, #draftSignUp{ background:#3d4f3e; color:#fff; }
+.draft-sync-error{ color:#ffabab; }
+
 /* Header for the tier board. */
 .tier-board-toolbar{
     display:flex;
@@ -294,6 +318,9 @@ dialog::backdrop{
         flex-direction:column;
     }
 
+    .draft-sync-panel, .draft-auth-form{ align-items:stretch; flex-direction:column; }
+    .draft-auth-form input, .draft-auth-form button, .draft-sync-panel > button{ width:100%; }
+
     .player-form-grid{
         grid-template-columns:1fr;
         gap:0;
@@ -325,11 +352,32 @@ dialog::backdrop{
 }
 
 .player-card{
+    position:relative;
     background:#303030;
     padding:12px;
     border-radius:10px;
     cursor:grab;
     transition:.2s;
+}
+
+.remove-player{
+    position:absolute;
+    top:7px;
+    right:7px;
+    width:22px;
+    height:22px;
+    padding:0;
+    border:0;
+    border-radius:50%;
+    background:#4a2525;
+    color:#ffbebe;
+    cursor:pointer;
+    font-size:18px;
+    line-height:20px;
+}
+
+.remove-player:hover{
+    background:#713333;
 }
 
 .player-card:hover{

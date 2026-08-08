@@ -23,7 +23,9 @@ const defaultPlayers = [
 
 // Players added through the form are saved separately from the default list.
 const CUSTOM_PLAYERS_KEY = "customTierPlayers";
+const HIDDEN_PLAYERS_KEY = "hiddenTierPlayers";
 const customPlayers = JSON.parse(localStorage.getItem(CUSTOM_PLAYERS_KEY) || "[]");
+const hiddenPlayers = new Set(JSON.parse(localStorage.getItem(HIDDEN_PLAYERS_KEY) || "[]"));
 let players = [...defaultPlayers, ...customPlayers];
 
 // Number of players currently selected for the draft.
@@ -44,7 +46,7 @@ function loadPlayers() {
   draftedCount = 0;
   Object.keys(roster).forEach((position) => { roster[position] = 0; });
 
-  players.forEach((player) => {
+  players.filter((player) => !hiddenPlayers.has(player.name)).forEach((player) => {
     // Create the HTML element that represents this player.
     const card = document.createElement("div");
     card.className = "player-card";
@@ -60,6 +62,7 @@ function loadPlayers() {
 
     // Fill the card with the player's details and any tags.
     card.innerHTML = `
+      <button class="remove-player" type="button" aria-label="Remove ${player.name} from board">&times;</button>
       <div class="player-name">${player.name}</div>
       <div class="player-info">${player.position} &bull; ${player.team}</div>
       <div class="player-info">ADP: ${player.adp}</div>
@@ -70,6 +73,21 @@ function loadPlayers() {
         `).join("")}
       </div>
     `;
+
+    // Remove a player without also triggering the card's draft-selection click.
+    card.querySelector(".remove-player").addEventListener("click", (event) => {
+      event.stopPropagation();
+      hiddenPlayers.add(player.name);
+      savedPlayers.delete(player.name);
+      const customIndex = customPlayers.indexOf(player);
+      if (customIndex !== -1) customPlayers.splice(customIndex, 1);
+      localStorage.setItem(HIDDEN_PLAYERS_KEY, JSON.stringify([...hiddenPlayers]));
+      localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
+      saveSelectedPlayers();
+      document.dispatchEvent(new CustomEvent("draftplayerremoved", { detail: { player, isCustom: customIndex !== -1 } }));
+      loadPlayers();
+      updateRoster();
+    });
 
     // Toggle this player between selected and unselected when the card is clicked.
     card.addEventListener("click", () => {
@@ -167,6 +185,9 @@ document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
     tags
   };
 
+  // Re-adding a previously removed name makes the new card visible again.
+  hiddenPlayers.delete(name);
+  localStorage.setItem(HIDDEN_PLAYERS_KEY, JSON.stringify([...hiddenPlayers]));
   customPlayers.push(player);
   players.push(player);
   localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));

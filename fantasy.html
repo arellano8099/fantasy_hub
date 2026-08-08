@@ -14,6 +14,16 @@
 <!-- Title -->
 <h1>DraftKings Best Ball Command Center</h1>
 <p class="page-link"><a href="tracker.html">Open Fantasy & Bets Tracker</a></p>
+<section class="draft-sync-panel">
+  <span id="draftSyncStatus">Sign in to sync this draft across devices.</span>
+  <form id="draftAuthForm" class="draft-auth-form">
+    <input id="draftAuthEmail" type="email" placeholder="Email" required>
+    <input id="draftAuthPassword" type="password" placeholder="Password" minlength="6" required>
+    <button type="submit">Sign in</button>
+    <button type="button" id="draftSignUp">Create account</button>
+  </form>
+  <button type="button" id="draftSignOut" hidden>Sign out</button>
+</section>
 
 
 <!-- Main layout: tier board on the left and roster construction on the right. -->
@@ -162,7 +172,9 @@ QB 2-3 | RB 5-6 | WR 8-9 | TE 2-3
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="Fantasy_Script.js"></script>
+<script src="draft-sync.js"></script>
 
 </body>
 </html>
