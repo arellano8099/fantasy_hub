@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantasy & Bets Tracker</title>
+<link rel="stylesheet" href="tracker.css">
+</head>
+<body>
+<header class="site-header">
+  <div>
+    <p class="eyebrow">Personal dashboard</p>
+    <h1>Fantasy & Bets Tracker</h1>
+  </div>
+  <a class="draft-link" href="fantasy.html">Back to Draft Board</a>
+</header>
+
+<main>
+  <section class="summary-grid" aria-label="Betting summary">
+    <article class="summary-card"><span>Active Leagues</span><strong id="activeLeagues">0</strong></article>
+    <article class="summary-card"><span>Open Bets</span><strong id="openBets">0</strong></article>
+    <article class="summary-card"><span>Bet Record</span><strong id="betRecord">0-0</strong></article>
+    <article class="summary-card"><span>Net Profit</span><strong id="netProfit">$0.00</strong></article>
+    <article class="summary-card"><span>ROI</span><strong id="roi">0.0%</strong></article>
+  </section>
+
+  <div class="tracker-layout">
+    <section class="panel form-panel">
+      <h2>Add Fantasy League</h2>
+      <form id="fantasyForm">
+        <label>League name<input id="leagueName" required placeholder="Sunday Home League"></label>
+        <label>Platform<input id="leaguePlatform" placeholder="Sleeper, ESPN, Yahoo..."></label>
+        <label>Team name<input id="teamName" placeholder="Gridiron Kings"></label>
+        <label>Buy-in ($)<input id="leagueBuyIn" type="number" min="0" step="0.01" value="0"></label>
+        <label>Status
+          <select id="leagueStatus"><option value="Active">Active</option><option value="Completed">Completed</option><option value="Upcoming">Upcoming</option></select>
+        </label>
+        <button type="submit">Add League</button>
+      </form>
+    </section>
+
+    <section class="panel form-panel">
+      <h2>Add Bet</h2>
+      <form id="betForm">
+        <label>Date<input id="betDate" type="date" required></label>
+        <label>Sport<input id="betSport" required placeholder="NFL"></label>
+        <label>Wager<input id="betWager" required placeholder="Chiefs -3.5"></label>
+        <label>Stake ($)<input id="betStake" type="number" min="0.01" step="0.01" required></label>
+        <label>American odds<input id="betOdds" type="number" required placeholder="-110"></label>
+        <label>Result
+          <select id="betResult"><option value="Pending">Pending</option><option value="Win">Win</option><option value="Loss">Loss</option><option value="Push">Push</option></select>
+        </label>
+        <button type="submit">Add Bet</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="panel table-panel">
+    <div class="section-heading"><h2>Fantasy Leagues</h2><span id="leagueCount">0 leagues</span></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>League</th><th>Platform</th><th>Team</th><th>Buy-in</th><th>Status</th><th></th></tr></thead>
+      <tbody id="leagueTableBody"></tbody></table>
+    </div>
+  </section>
+
+  <section class="panel table-panel">
+    <div class="section-heading"><h2>Bet History</h2><span id="betCount">0 bets</span></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Date</th><th>Sport</th><th>Wager</th><th>Stake</th><th>Odds</th><th>Result</th><th>Profit</th><th></th></tr></thead>
+      <tbody id="betTableBody"></tbody></table>
+    </div>
+  </section>
+</main>
+
+<script src="tracker.js"></script>
+</body>
+</html>

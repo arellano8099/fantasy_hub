@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Fantasy Assistant</title>
+<link rel="stylesheet" href="Style_Fantasy.css">
+
+</head>
+
+<body>
+
+<!-- Title -->
+<h1>DraftKings Best Ball Command Center</h1>
+<p class="page-link"><a href="tracker.html">Open Fantasy & Bets Tracker</a></p>
+
+
+<!-- Main layout: tier board on the left and roster construction on the right. -->
+<div class="app-layout">
+
+<main class="tier-section">
+
+<!-- Tier Board Construction -->
+<div class="tier-board-toolbar">
+<h2>Tier Board</h2>
+</div>
+
+<div class="tier-board">
+
+<div class="tier-column">
+<div class="tier-header tier1">League Winners</div>
+<div class="tier-list" id="tier1"></div>
+</div>
+
+<div class="tier-column">
+<div class="tier-header tier2">Cornerstones</div>
+<div class="tier-list" id="tier2"></div>
+</div>
+
+<div class="tier-column">
+<div class="tier-header tier3">Tournament Upside</div>
+<div class="tier-list" id="tier3"></div>
+</div>
+
+<div class="tier-column">
+<div class="tier-header tier4">Ceiling Bets</div>
+<div class="tier-list" id="tier4"></div>
+</div>
+
+<div class="tier-column">
+<div class="tier-header tier5">Playoff Winners</div>
+<div class="tier-list" id="tier5"></div>
+</div>
+
+<div class="tier-column">
+<div class="tier-header tier6">Lottery Tickets</div>
+<div class="tier-list" id="tier6"></div>
+</div>
+
+<div class="tier-column">
+<div class="tier-header myguys">My Guys</div>
+<div class="tier-list" id="myGuys"></div>
+</div>
+
+</div>
+
+<!-- Search stays below the board while tier columns scroll above it. -->
+<input
+type="text"
+id="playerSearch"
+class="tier-search"
+placeholder="Search Players..."
+onkeyup="searchPlayers()">
+</main>
+
+<!-- Player Tracker -->
+<aside class="roster-card">
+
+<h2>Roster Construction</h2>
+
+<p>
+Recommended Build:<br>
+QB 2-3 | RB 5-6 | WR 8-9 | TE 2-3
+</p>
+
+<div class="counts">
+
+<!-- Counters for each position -->
+<div class="count-box">
+<h3>QB</h3>
+<span id="qb">0</span>
+</div>
+
+<div class="count-box">
+<h3>RB</h3>
+<span id="rb">0</span>
+</div>
+
+<div class="count-box">
+<h3>WR</h3>
+<span id="wr">0</span>
+</div>
+
+<div class="count-box">
+<h3>TE</h3>
+<span id="te">0</span>
+</div>
+
+</div>
+
+<!-- Progress bar -->
+<h3>Draft Progress</h3>
+
+<div class="progress-bar">
+<div class="progress-fill" id="progressFill"></div>
+</div>
+
+<p id="draftRounds">0 / 18 Picks</p>
+
+<!-- Names of every player currently selected on the tier board. -->
+<div class="drafted-players">
+<h3>Drafted Players</h3>
+<ul id="draftedPlayersList"></ul>
+</div>
+
+<div class="warning" id="warning"></div>
+
+</aside>
+
+</div>
+
+<script src="Fantasy_Script.js"></script>
+
+</body>
+</html>
