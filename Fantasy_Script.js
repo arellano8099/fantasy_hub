@@ -51,7 +51,14 @@ function loadPlayers() {
   draftedCount = 0;
   Object.keys(roster).forEach((position) => { roster[position] = 0; });
 
-  players.filter((player) => !hiddenPlayers.has(player.name)).forEach((player) => {
+  // Old local or cloud data can contain duplicates; show only the first card per name.
+  const displayedPlayerNames = new Set();
+  players.filter((player) => {
+    const nameKey = player.name.trim().toLowerCase();
+    if (hiddenPlayers.has(player.name) || displayedPlayerNames.has(nameKey)) return false;
+    displayedPlayerNames.add(nameKey);
+    return true;
+  }).forEach((player) => {
     // Create the HTML element that represents this player.
     const card = document.createElement("div");
     card.className = "player-card";
@@ -249,7 +256,13 @@ function updateRoster() {
 // Show the names of all selected players in the roster construction panel.
 function updateDraftedPlayersList() {
   const draftedPlayersList = document.getElementById("draftedPlayersList");
-  const draftedPlayers = players.filter((player) => savedPlayers.has(player.name));
+  const listedPlayerNames = new Set();
+  const draftedPlayers = players.filter((player) => {
+    const nameKey = player.name.trim().toLowerCase();
+    if (!savedPlayers.has(player.name) || hiddenPlayers.has(player.name) || listedPlayerNames.has(nameKey)) return false;
+    listedPlayerNames.add(nameKey);
+    return true;
+  });
 
   // Display a helpful message until the first player is selected.
   if (draftedPlayers.length === 0) {
