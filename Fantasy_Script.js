@@ -9,8 +9,8 @@ function saveSelectedPlayers() {
   localStorage.setItem("selectedPlayers", JSON.stringify([...savedPlayers]));
 }
 
-// Player data used to create the cards in the tier board.
-const players = [
+// Default player data used to create the cards in the tier board.
+const defaultPlayers = [
   { name: "Justin Jefferson", position: "WR", team: "MIN", adp: "2.1", tier: "tier1", tags: ["value"] },
   { name: "Ja'Marr Chase", position: "WR", team: "CIN", adp: "1.8", tier: "tier1", tags: [] },
   { name: "Bijan Robinson", position: "RB", team: "ATL", adp: "3.0", tier: "tier1", tags: [] },
@@ -20,6 +20,11 @@ const players = [
   { name: "Rome Odunze", position: "WR", team: "CHI", adp: "48.0", tier: "tier4", tags: [] },
   { name: "Chase Brown", position: "RB", team: "CIN", adp: "37.0", tier: "tier2", tags: ["value"] }
 ];
+
+// Players added through the form are saved separately from the default list.
+const CUSTOM_PLAYERS_KEY = "customTierPlayers";
+const customPlayers = JSON.parse(localStorage.getItem(CUSTOM_PLAYERS_KEY) || "[]");
+let players = [...defaultPlayers, ...customPlayers];
 
 // Number of players currently selected for the draft.
 let draftedCount = 0;
@@ -34,11 +39,17 @@ const roster = {
 
 // Create a card for every player and add it to the appropriate tier column.
 function loadPlayers() {
+  // Clear old cards and recalculate totals when the board is rebuilt.
+  document.querySelectorAll(".tier-list").forEach((list) => { list.innerHTML = ""; });
+  draftedCount = 0;
+  Object.keys(roster).forEach((position) => { roster[position] = 0; });
+
   players.forEach((player) => {
     // Create the HTML element that represents this player.
     const card = document.createElement("div");
     card.className = "player-card";
     card.draggable = true;
+    card.dataset.playerName = player.name;
 
     // Restore the selected appearance and roster totals for previously saved players.
     if (savedPlayers.has(player.name)) {
@@ -111,8 +122,58 @@ tierLists.forEach((list) => {
   list.addEventListener("drop", () => {
     if (draggedCard) {
       list.appendChild(draggedCard);
+
+      // Remember the new tier for custom players after the page is refreshed.
+      const movedPlayer = players.find((player) => player.name === draggedCard.dataset.playerName);
+      if (movedPlayer && customPlayers.includes(movedPlayer)) {
+        movedPlayer.tier = list.id;
+        localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
+      }
     }
   });
+});
+
+// Open and close the quick-add player dialog.
+const addPlayerDialog = document.getElementById("addPlayerDialog");
+document.getElementById("openAddPlayer").addEventListener("click", () => {
+  document.getElementById("addPlayerError").textContent = "";
+  addPlayerDialog.showModal();
+  document.getElementById("newPlayerName").focus();
+});
+
+document.getElementById("closeAddPlayer").addEventListener("click", () => addPlayerDialog.close());
+
+// Add the entered player, save them locally, and rebuild the board.
+document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = document.getElementById("newPlayerName").value.trim();
+  const error = document.getElementById("addPlayerError");
+
+  if (players.some((player) => player.name.toLowerCase() === name.toLowerCase())) {
+    error.textContent = "That player is already on the tier board.";
+    return;
+  }
+
+  const tags = document.getElementById("newPlayerTags").value
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""))
+    .filter(Boolean);
+  const player = {
+    name,
+    position: document.getElementById("newPlayerPosition").value,
+    team: document.getElementById("newPlayerTeam").value.trim().toUpperCase(),
+    adp: document.getElementById("newPlayerAdp").value || "—",
+    tier: document.getElementById("newPlayerTier").value,
+    tags
+  };
+
+  customPlayers.push(player);
+  players.push(player);
+  localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
+  event.target.reset();
+  addPlayerDialog.close();
+  loadPlayers();
+  updateRoster();
 });
 
 // Filter player cards based on the text typed in the search field.

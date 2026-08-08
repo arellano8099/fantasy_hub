@@ -24,6 +24,7 @@
 <!-- Tier Board Construction -->
 <div class="tier-board-toolbar">
 <h2>Tier Board</h2>
+<button type="button" id="openAddPlayer" class="add-player-button">+ Add Player</button>
 </div>
 
 <div class="tier-board">
@@ -64,6 +65,37 @@
 </div>
 
 </div>
+
+<!-- Quick form for adding a player directly to any tier. -->
+<dialog id="addPlayerDialog">
+<form id="addPlayerForm" method="dialog">
+<div class="dialog-heading">
+<h2>Add Player</h2>
+<button type="button" id="closeAddPlayer" class="close-dialog" aria-label="Close">&times;</button>
+</div>
+
+<label>Player name<input id="newPlayerName" required placeholder="Player name"></label>
+<div class="player-form-grid">
+<label>Position
+<select id="newPlayerPosition" required>
+<option value="QB">QB</option><option value="RB">RB</option><option value="WR">WR</option><option value="TE">TE</option>
+</select>
+</label>
+<label>Team<input id="newPlayerTeam" required maxlength="4" placeholder="KC"></label>
+</div>
+<div class="player-form-grid">
+<label>ADP<input id="newPlayerAdp" type="number" min="0" step="0.1" placeholder="45.0"></label>
+<label>Tier
+<select id="newPlayerTier" required>
+<option value="tier1">League Winners</option><option value="tier2">Cornerstones</option><option value="tier3">Tournament Upside</option><option value="tier4">Ceiling Bets</option><option value="tier5">Playoff Winners</option><option value="tier6">Lottery Tickets</option><option value="myGuys">My Guys</option>
+</select>
+</label>
+</div>
+<label>Tags <span class="form-hint">Optional; separate tags with commas</span><input id="newPlayerTags" placeholder="value, my-guy"></label>
+<p id="addPlayerError" class="form-error" role="alert"></p>
+<button type="submit" class="save-player-button">Add to Tier</button>
+</form>
+</dialog>
 
 <!-- Search stays below the board while tier columns scroll above it. -->
 <input

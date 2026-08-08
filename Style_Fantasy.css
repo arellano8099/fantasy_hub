@@ -56,6 +56,100 @@ input{
     margin:0;
 }
 
+.add-player-button{
+    width:auto;
+    margin:0;
+    padding:10px 14px;
+    border:0;
+    border-radius:8px;
+    background:#7CFC00;
+    color:#121212;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* Dialog used to add a new player without leaving the board. */
+dialog{
+    width:min(92vw, 480px);
+    border:1px solid #4b4b4b;
+    border-radius:14px;
+    padding:22px;
+    background:#232323;
+    color:white;
+}
+
+dialog::backdrop{
+    background:rgba(0,0,0,.7);
+}
+
+.dialog-heading{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+}
+
+.dialog-heading h2{
+    margin:0 0 18px;
+}
+
+.close-dialog{
+    width:auto;
+    border:0;
+    background:transparent;
+    color:#cfcfcf;
+    cursor:pointer;
+    font-size:28px;
+    line-height:1;
+}
+
+#addPlayerForm label{
+    display:block;
+    margin-bottom:13px;
+    color:#cfcfcf;
+    font-size:14px;
+}
+
+#addPlayerForm input,
+#addPlayerForm select{
+    width:100%;
+    margin:6px 0 0;
+    padding:11px;
+    border:1px solid #4a4a4a;
+    border-radius:8px;
+    background:#303030;
+    color:white;
+}
+
+.player-form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:13px;
+}
+
+.form-hint{
+    color:#aaa;
+    font-weight:normal;
+}
+
+.form-error{
+    min-height:20px;
+    margin:0 0 10px;
+    color:#ff8f8f;
+    font-size:14px;
+}
+
+.save-player-button{
+    width:100%;
+    padding:12px;
+    border:0;
+    border-radius:8px;
+    background:#7CFC00;
+    color:#121212;
+    font-weight:bold;
+    cursor:pointer;
+}
+
 /* Keep the tier board on the left and roster construction in a right column. */
 .app-layout{
     display:grid;
@@ -198,6 +292,11 @@ input{
     .tier-board-toolbar{
         align-items:stretch;
         flex-direction:column;
+    }
+
+    .player-form-grid{
+        grid-template-columns:1fr;
+        gap:0;
     }
 
 }
