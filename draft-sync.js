@@ -75,6 +75,10 @@ document.addEventListener("drop", (event) => {
   }
 });
 document.getElementById("addPlayerForm").addEventListener("submit", () => setTimeout(syncCustomPlayers, 0));
+document.addEventListener("draftplayeradded", async (event) => {
+  await syncState(event.detail.player);
+  await syncCustomPlayers();
+});
 document.addEventListener("draftplayerremoved", async (event) => {
   if (!draftUser) return;
   const { player, isCustom } = event.detail;

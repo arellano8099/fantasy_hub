@@ -167,7 +167,8 @@ document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
   const name = document.getElementById("newPlayerName").value.trim();
   const error = document.getElementById("addPlayerError");
 
-  if (players.some((player) => player.name.toLowerCase() === name.toLowerCase())) {
+  // A removed player may be added again; only visible players count as duplicates.
+  if (players.some((player) => player.name.toLowerCase() === name.toLowerCase() && !hiddenPlayers.has(player.name))) {
     error.textContent = "That player is already on the tier board.";
     return;
   }
@@ -195,6 +196,7 @@ document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
   addPlayerDialog.close();
   loadPlayers();
   updateRoster();
+  document.dispatchEvent(new CustomEvent("draftplayeradded", { detail: { player } }));
 });
 
 // Filter player cards based on the text typed in the search field.
