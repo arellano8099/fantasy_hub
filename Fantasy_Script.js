@@ -24,7 +24,12 @@ const defaultPlayers = [
 // Players added through the form are saved separately from the default list.
 const CUSTOM_PLAYERS_KEY = "customTierPlayers";
 const HIDDEN_PLAYERS_KEY = "hiddenTierPlayers";
-const customPlayers = JSON.parse(localStorage.getItem(CUSTOM_PLAYERS_KEY) || "[]");
+// Remove duplicate custom names left behind by older versions of the add-player form.
+const customPlayers = JSON.parse(localStorage.getItem(CUSTOM_PLAYERS_KEY) || "[]").filter((player, index, list) =>
+  !defaultPlayers.some((defaultPlayer) => defaultPlayer.name.toLowerCase() === player.name.toLowerCase()) &&
+  list.findIndex((item) => item.name.toLowerCase() === player.name.toLowerCase()) === index
+);
+localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
 const hiddenPlayers = new Set(JSON.parse(localStorage.getItem(HIDDEN_PLAYERS_KEY) || "[]"));
 let players = [...defaultPlayers, ...customPlayers];
 
@@ -186,17 +191,30 @@ document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
     tags
   };
 
-  // Re-adding a previously removed name makes the new card visible again.
+  // Restore the original hidden player rather than creating a second copy.
+  const removedPlayer = players.find((item) => item.name.toLowerCase() === name.toLowerCase());
+  let playerToSave = player;
+  if (removedPlayer) {
+    Object.assign(removedPlayer, player);
+    playerToSave = removedPlayer;
+    // A removed custom player was taken out of the saved custom list; add it back.
+    if (!defaultPlayers.includes(removedPlayer) && !customPlayers.includes(removedPlayer)) {
+      customPlayers.push(removedPlayer);
+    }
+  } else {
+    customPlayers.push(player);
+    players.push(player);
+  }
+
+  // Re-adding a previously removed name makes the card visible again.
   hiddenPlayers.delete(name);
   localStorage.setItem(HIDDEN_PLAYERS_KEY, JSON.stringify([...hiddenPlayers]));
-  customPlayers.push(player);
-  players.push(player);
   localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
   event.target.reset();
   addPlayerDialog.close();
   loadPlayers();
   updateRoster();
-  document.dispatchEvent(new CustomEvent("draftplayeradded", { detail: { player } }));
+  document.dispatchEvent(new CustomEvent("draftplayeradded", { detail: { player: playerToSave } }));
 });
 
 // Filter player cards based on the text typed in the search field.

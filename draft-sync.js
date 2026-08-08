@@ -34,7 +34,10 @@ async function loadDraft() {
   ]);
   if (states.error || customs.error) throw states.error || customs.error;
   const byKey = new Map(states.data.map((row) => [row.player_key, row]));
-  customPlayers.splice(0, customPlayers.length, ...customs.data.map((row) => ({ name: row.name, position: row.position, team: row.team, adp: row.adp, tier: row.tier, tags: row.tags || [] })));
+  const remoteCustomPlayers = customs.data
+    .map((row) => ({ name: row.name, position: row.position, team: row.team, adp: row.adp, tier: row.tier, tags: row.tags || [] }))
+    .filter((player, index, list) => !defaultPlayers.some((defaultPlayer) => draftKey(defaultPlayer) === draftKey(player)) && list.findIndex((item) => draftKey(item) === draftKey(player)) === index);
+  customPlayers.splice(0, customPlayers.length, ...remoteCustomPlayers);
   players.splice(0, players.length, ...[...defaultPlayers, ...customPlayers].map((player) => ({ ...player, tier: byKey.get(draftKey(player))?.tier || player.tier })));
   hiddenPlayers.clear();
   players.forEach((player) => { if (byKey.get(draftKey(player))?.hidden) hiddenPlayers.add(player.name); });
