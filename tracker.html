@@ -12,10 +12,29 @@
     <p class="eyebrow">Personal dashboard</p>
     <h1>Fantasy & Bets Tracker</h1>
   </div>
-  <a class="draft-link" href="fantasy.html">Back to Draft Board</a>
+  <div class="header-actions">
+    <a class="draft-link" href="fantasy.html">Back to Draft Board</a>
+    <button id="signOutButton" class="sign-out-button" hidden>Sign out</button>
+  </div>
 </header>
 
 <main>
+  <!-- Sign in with the same account on each device to keep data synchronized. -->
+  <section id="authPanel" class="auth-panel">
+    <div>
+      <strong id="authTitle">Sign in to sync</strong>
+      <p id="authMessage">Your current entries stay on this device until you sign in.</p>
+    </div>
+    <form id="authForm" class="auth-form">
+      <label>Email<input id="authEmail" type="email" autocomplete="email" required></label>
+      <label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required></label>
+      <div class="auth-buttons">
+        <button type="submit">Sign in</button>
+        <button type="button" id="signUpButton" class="secondary-button">Create account</button>
+      </div>
+    </form>
+  </section>
+
   <section class="summary-grid" aria-label="Betting summary">
     <article class="summary-card"><span>Active Leagues</span><strong id="activeLeagues">0</strong></article>
     <article class="summary-card"><span>Open Bets</span><strong id="openBets">0</strong></article>
@@ -72,6 +91,8 @@
   </section>
 </main>
 
+<!-- Supabase client library; the publishable key in tracker.js is safe for browser use. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="tracker.js"></script>
 </body>
 </html>
