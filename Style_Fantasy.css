@@ -376,12 +376,34 @@ dialog::backdrop{
     line-height:20px;
 }
 
+.edit-player{
+    position:absolute;
+    top:7px;
+    right:35px;
+    width:auto;
+    padding:3px 7px;
+    border:0;
+    border-radius:5px;
+    background:#454545;
+    color:#ddd;
+    cursor:pointer;
+    font-size:11px;
+}
+
+.edit-player:hover{
+    background:#5b5b5b;
+}
+
 .remove-player:hover{
     background:#713333;
 }
 
 .player-card:hover{
     transform:scale(1.02);
+}
+
+.player-card.dragging{
+    opacity:.55;
 }
 
 .player-name{

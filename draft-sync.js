@@ -12,7 +12,15 @@ const setStatus = (text, error = false) => {
   status.textContent = text;
   status.classList.toggle("draft-sync-error", error);
 };
-const stateRow = (player) => ({ user_id: draftUser.id, player_key: draftKey(player), drafted: savedPlayers.has(player.name), tier: player.tier, hidden: hiddenPlayers.has(player.name) });
+const stateRow = (player) => ({
+  user_id: draftUser.id,
+  player_key: draftKey(player),
+  drafted: savedPlayers.has(player.name),
+  hidden: hiddenPlayers.has(player.name),
+  tier: player.tier,
+  sort_order: player.sortOrder ?? 0,
+  player_data: { name: player.name, position: player.position, team: player.team, adp: player.adp, tags: player.tags }
+});
 const customRow = (player) => ({ user_id: draftUser.id, player_key: draftKey(player), name: player.name, position: player.position, team: player.team, adp: player.adp, tier: player.tier, tags: player.tags });
 
 async function syncState(player) {
@@ -38,7 +46,15 @@ async function loadDraft() {
     .map((row) => ({ name: row.name, position: row.position, team: row.team, adp: row.adp, tier: row.tier, tags: row.tags || [] }))
     .filter((player, index, list) => !defaultPlayers.some((defaultPlayer) => draftKey(defaultPlayer) === draftKey(player)) && list.findIndex((item) => draftKey(item) === draftKey(player)) === index);
   customPlayers.splice(0, customPlayers.length, ...remoteCustomPlayers);
-  players.splice(0, players.length, ...[...defaultPlayers, ...customPlayers].map((player) => ({ ...player, tier: byKey.get(draftKey(player))?.tier || player.tier })));
+  players.splice(0, players.length, ...[...defaultPlayers, ...customPlayers].map((player) => {
+    const state = byKey.get(draftKey(player));
+    return state ? {
+      ...player,
+      ...(state.player_data || {}),
+      tier: state.tier || player.tier,
+      sortOrder: state.sort_order ?? player.sortOrder
+    } : player;
+  }));
   hiddenPlayers.clear();
   players.forEach((player) => { if (byKey.get(draftKey(player))?.hidden) hiddenPlayers.add(player.name); });
   savedPlayers.clear();
@@ -74,10 +90,22 @@ document.addEventListener("drop", (event) => {
   const destination = event.target.closest(".tier-list");
   if (player && destination) {
     player.tier = destination.id;
-    syncState(player);
+    // Sync every card in the target tier so the exact drag order is shared.
+    [...destination.querySelectorAll(".player-card")].forEach((card, index) => {
+      const orderedPlayer = players.find((item) => item.name === card.dataset.playerName);
+      if (orderedPlayer) {
+        orderedPlayer.tier = destination.id;
+        orderedPlayer.sortOrder = index;
+        syncState(orderedPlayer);
+      }
+    });
   }
 });
 document.getElementById("addPlayerForm").addEventListener("submit", () => setTimeout(syncCustomPlayers, 0));
+document.addEventListener("draftplayeredited", async (event) => {
+  await syncState(event.detail.player);
+  if (customPlayers.includes(event.detail.player)) await syncCustomPlayers();
+});
 document.addEventListener("draftplayeradded", async (event) => {
   await syncState(event.detail.player);
   await syncCustomPlayers();
@@ -111,3 +139,5 @@ draftSupabase.auth.onAuthStateChange(async (_event, session) => {
   catch (error) { setStatus(`Cloud sync needs setup: ${error.message}`, true); }
 });
 window.addEventListener("focus", () => { if (draftUser) loadDraft().catch((error) => setStatus(error.message, true)); });
+// Refresh periodically so an open board receives changes made on another device.
+setInterval(() => { if (draftUser) loadDraft().catch((error) => setStatus(error.message, true)); }, 15000);

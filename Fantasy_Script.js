@@ -24,6 +24,10 @@ const defaultPlayers = [
 // Players added through the form are saved separately from the default list.
 const CUSTOM_PLAYERS_KEY = "customTierPlayers";
 const HIDDEN_PLAYERS_KEY = "hiddenTierPlayers";
+const PLAYER_EDITS_KEY = "tierPlayerEdits";
+const PLAYER_PLACEMENTS_KEY = "tierPlayerPlacements";
+const playerEdits = JSON.parse(localStorage.getItem(PLAYER_EDITS_KEY) || "{}");
+const playerPlacements = JSON.parse(localStorage.getItem(PLAYER_PLACEMENTS_KEY) || "{}");
 // Remove duplicate custom names left behind by older versions of the add-player form.
 const customPlayers = JSON.parse(localStorage.getItem(CUSTOM_PLAYERS_KEY) || "[]").filter((player, index, list) =>
   !defaultPlayers.some((defaultPlayer) => defaultPlayer.name.toLowerCase() === player.name.toLowerCase()) &&
@@ -31,7 +35,8 @@ const customPlayers = JSON.parse(localStorage.getItem(CUSTOM_PLAYERS_KEY) || "[]
 );
 localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
 const hiddenPlayers = new Set(JSON.parse(localStorage.getItem(HIDDEN_PLAYERS_KEY) || "[]"));
-let players = [...defaultPlayers, ...customPlayers];
+let players = [...defaultPlayers.map((player) => ({ ...player, ...playerEdits[player.name], ...playerPlacements[player.name] })), ...customPlayers];
+let editingPlayer = null;
 
 // Number of players currently selected for the draft.
 let draftedCount = 0;
@@ -58,7 +63,7 @@ function loadPlayers() {
     if (hiddenPlayers.has(player.name) || displayedPlayerNames.has(nameKey)) return false;
     displayedPlayerNames.add(nameKey);
     return true;
-  }).forEach((player) => {
+  }).sort((a, b) => (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER)).forEach((player) => {
     // Create the HTML element that represents this player.
     const card = document.createElement("div");
     card.className = "player-card";
@@ -75,6 +80,7 @@ function loadPlayers() {
     // Fill the card with the player's details and any tags.
     card.innerHTML = `
       <button class="remove-player" type="button" aria-label="Remove ${player.name} from board">&times;</button>
+      <button class="edit-player" type="button" aria-label="Edit ${player.name}">Edit</button>
       <div class="player-name">${player.name}</div>
       <div class="player-info">${player.position} &bull; ${player.team}</div>
       <div class="player-info">ADP: ${player.adp}</div>
@@ -101,6 +107,12 @@ function loadPlayers() {
       updateRoster();
     });
 
+    // Open the same form in edit mode for quick player changes.
+    card.querySelector(".edit-player").addEventListener("click", (event) => {
+      event.stopPropagation();
+      openPlayerForm(player);
+    });
+
     // Toggle this player between selected and unselected when the card is clicked.
     card.addEventListener("click", () => {
       if (!card.classList.contains("drafted")) {
@@ -125,7 +137,10 @@ function loadPlayers() {
     // Remember which card is being dragged before it is dropped into a new tier.
     card.addEventListener("dragstart", () => {
       draggedCard = card;
+      card.classList.add("dragging");
     });
+
+    card.addEventListener("dragend", () => card.classList.remove("dragging"));
 
     // Insert the completed card into the tier whose ID is stored on the player.
     document.getElementById(player.tier).appendChild(card);
@@ -144,14 +159,25 @@ const tierLists = document.querySelectorAll(".tier-list");
 
 tierLists.forEach((list) => {
   // Prevent the browser default so the drop event is permitted.
-  list.addEventListener("dragover", (event) => {
+list.addEventListener("dragover", (event) => {
     event.preventDefault();
+    if (!draggedCard || draggedCard.parentElement !== list) return;
+
+    // Insert before/after the card under the pointer, allowing true tier reordering.
+    const cards = [...list.querySelectorAll(".player-card:not(.dragging)")];
+    const nextCard = cards.find((card) => {
+      const box = card.getBoundingClientRect();
+      return event.clientY < box.top + box.height / 2;
+    });
+    if (nextCard) list.insertBefore(draggedCard, nextCard);
+    else list.appendChild(draggedCard);
   });
 
   // Move the active card into the tier where it was dropped.
   list.addEventListener("drop", () => {
     if (draggedCard) {
-      list.appendChild(draggedCard);
+      // Cards dragged from another tier are appended; same-tier order was set in dragover.
+      if (draggedCard.parentElement !== list) list.appendChild(draggedCard);
 
       // Remember the new tier for custom players after the page is refreshed.
       const movedPlayer = players.find((player) => player.name === draggedCard.dataset.playerName);
@@ -159,6 +185,18 @@ tierLists.forEach((list) => {
         movedPlayer.tier = list.id;
         localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
       }
+
+      // Save the resulting position of every card in every tier for the next refresh.
+      document.querySelectorAll(".tier-list").forEach((tierList) => {
+        tierList.querySelectorAll(".player-card").forEach((card, index) => {
+          const tierPlayer = players.find((player) => player.name === card.dataset.playerName);
+          if (!tierPlayer) return;
+          tierPlayer.tier = tierList.id;
+          tierPlayer.sortOrder = index;
+          playerPlacements[tierPlayer.name] = { tier: tierList.id, sortOrder: index };
+        });
+      });
+      localStorage.setItem(PLAYER_PLACEMENTS_KEY, JSON.stringify(playerPlacements));
     }
   });
 });
@@ -166,21 +204,38 @@ tierLists.forEach((list) => {
 // Open and close the quick-add player dialog.
 const addPlayerDialog = document.getElementById("addPlayerDialog");
 document.getElementById("openAddPlayer").addEventListener("click", () => {
-  document.getElementById("addPlayerError").textContent = "";
-  addPlayerDialog.showModal();
-  document.getElementById("newPlayerName").focus();
+  openPlayerForm();
 });
 
 document.getElementById("closeAddPlayer").addEventListener("click", () => addPlayerDialog.close());
 
 // Add the entered player, save them locally, and rebuild the board.
+function openPlayerForm(player = null) {
+  editingPlayer = player;
+  const form = document.getElementById("addPlayerForm");
+  document.getElementById("addPlayerError").textContent = "";
+  document.querySelector("#addPlayerDialog h2").textContent = player ? "Edit Player" : "Add Player";
+  document.querySelector("#addPlayerForm .save-player-button").textContent = player ? "Save Changes" : "Add to Tier";
+  form.reset();
+  if (player) {
+    document.getElementById("newPlayerName").value = player.name;
+    document.getElementById("newPlayerPosition").value = player.position;
+    document.getElementById("newPlayerTeam").value = player.team;
+    document.getElementById("newPlayerAdp").value = player.adp === "—" ? "" : player.adp;
+    document.getElementById("newPlayerTier").value = player.tier;
+    document.getElementById("newPlayerTags").value = player.tags.join(", ");
+  }
+  addPlayerDialog.showModal();
+  document.getElementById("newPlayerName").focus();
+}
+
 document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const name = document.getElementById("newPlayerName").value.trim();
   const error = document.getElementById("addPlayerError");
 
   // A removed player may be added again; only visible players count as duplicates.
-  if (players.some((player) => player.name.toLowerCase() === name.toLowerCase() && !hiddenPlayers.has(player.name))) {
+  if (players.some((player) => player !== editingPlayer && player.name.toLowerCase() === name.toLowerCase() && !hiddenPlayers.has(player.name))) {
     error.textContent = "That player is already on the tier board.";
     return;
   }
@@ -197,6 +252,36 @@ document.getElementById("addPlayerForm").addEventListener("submit", (event) => {
     tier: document.getElementById("newPlayerTier").value,
     tags
   };
+
+  // Editing updates the existing card, while adding creates or restores a card.
+  if (editingPlayer) {
+    const oldName = editingPlayer.name;
+    Object.assign(editingPlayer, player);
+    if (savedPlayers.delete(oldName)) savedPlayers.add(player.name);
+    if (hiddenPlayers.delete(oldName)) hiddenPlayers.delete(player.name);
+    if (oldName !== player.name && playerPlacements[oldName]) {
+      playerPlacements[player.name] = playerPlacements[oldName];
+      delete playerPlacements[oldName];
+      localStorage.setItem(PLAYER_PLACEMENTS_KEY, JSON.stringify(playerPlacements));
+    }
+    if (customPlayers.includes(editingPlayer)) {
+      localStorage.setItem(CUSTOM_PLAYERS_KEY, JSON.stringify(customPlayers));
+    } else {
+      playerEdits[player.name] = { ...editingPlayer };
+      if (oldName !== player.name) delete playerEdits[oldName];
+      localStorage.setItem(PLAYER_EDITS_KEY, JSON.stringify(playerEdits));
+    }
+    saveSelectedPlayers();
+    localStorage.setItem(HIDDEN_PLAYERS_KEY, JSON.stringify([...hiddenPlayers]));
+    event.target.reset();
+    addPlayerDialog.close();
+    const changedPlayer = editingPlayer;
+    editingPlayer = null;
+    loadPlayers();
+    updateRoster();
+    document.dispatchEvent(new CustomEvent("draftplayeredited", { detail: { player: changedPlayer } }));
+    return;
+  }
 
   // Restore the original hidden player rather than creating a second copy.
   const removedPlayer = players.find((item) => item.name.toLowerCase() === name.toLowerCase());

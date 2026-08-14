@@ -9,6 +9,8 @@ create table if not exists public.draft_player_states (
 );
 
 alter table public.draft_player_states add column if not exists hidden boolean not null default false;
+alter table public.draft_player_states add column if not exists sort_order integer not null default 0;
+alter table public.draft_player_states add column if not exists player_data jsonb;
 
 create table if not exists public.draft_custom_players (
   user_id uuid not null references auth.users(id) on delete cascade,
