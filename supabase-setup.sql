@@ -14,6 +14,8 @@ create table if not exists public.leagues (
 
 -- Each league owns an editable player list. Existing leagues receive an empty roster.
 alter table public.leagues add column if not exists roster jsonb not null default '[]'::jsonb;
+-- Refresh Supabase's REST schema cache so the browser can write the new column immediately.
+notify pgrst, 'reload schema';
 
 create table if not exists public.bets (
   id uuid primary key,
