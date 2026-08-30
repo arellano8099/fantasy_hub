@@ -1,4 +1,5 @@
 -- Run this one-time Draft Center setup in Supabase: SQL Editor > New query > Run.
+-- Run supabase-setup.sql as well to add the league roster column used by the tracker.
 create table if not exists public.draft_player_states (
   user_id uuid not null references auth.users(id) on delete cascade,
   player_key text not null,

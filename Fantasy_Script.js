@@ -320,62 +320,15 @@ function searchPlayers() {
   });
 }
 
-// Update all roster counters, draft progress, and warnings.
-function updateRoster() {
-  document.getElementById("qb").textContent = roster.QB;
-  document.getElementById("rb").textContent = roster.RB;
-  document.getElementById("wr").textContent = roster.WR;
-  document.getElementById("te").textContent = roster.TE;
+// Selection is retained only to flag players as drafted for the tracker; roster
+// construction deliberately lives with each fantasy team on the tracker page.
+function updateRoster() {}
 
-  // Display the selected-player total out of the 18-pick target.
-  document.getElementById("draftRounds").textContent = `${draftedCount} / 18 Picks`;
-
-  // Set the progress-bar width as a percentage of 18 total picks.
-  const percent = (draftedCount / 18) * 100;
-  document.getElementById("progressFill").style.width = `${percent}%`;
-
-  updateDraftedPlayersList();
-  checkRoster();
-}
-
-// Show the names of all selected players in the roster construction panel.
-function updateDraftedPlayersList() {
-  const draftedPlayersList = document.getElementById("draftedPlayersList");
-  const listedPlayerNames = new Set();
-  const draftedPlayers = players.filter((player) => {
-    const nameKey = player.name.trim().toLowerCase();
-    if (!savedPlayers.has(player.name) || hiddenPlayers.has(player.name) || listedPlayerNames.has(nameKey)) return false;
-    listedPlayerNames.add(nameKey);
-    return true;
-  });
-
-  // Display a helpful message until the first player is selected.
-  if (draftedPlayers.length === 0) {
-    draftedPlayersList.innerHTML = "<li>No players selected yet.</li>";
-    return;
-  }
-
-  // Create one list item with the player's name, position, and team.
-  draftedPlayersList.innerHTML = draftedPlayers.map((player) => `
-    <li><strong>${player.name}</strong> <span>${player.position} &bull; ${player.team}</span></li>
-  `).join("");
-}
-
-// Create roster-construction warnings based on selection totals.
-function checkRoster() {
-  const warnings = [];
-
-  // Warn when a position exceeds its recommended maximum.
-  if (roster.QB > 3) warnings.push("Too many QBs");
-  if (roster.RB > 6) warnings.push("Too many RBs");
-  if (roster.WR > 9) warnings.push("Too many WRs");
-  if (roster.TE > 3) warnings.push("Too many TEs");
-
-  // Warn about missing or insufficient positions later in the draft.
-  if (draftedCount >= 10 && roster.QB === 0) warnings.push("Draft a QB soon");
-  if (draftedCount >= 10 && roster.TE === 0) warnings.push("Draft a TE soon");
-  if (draftedCount >= 12 && roster.WR < 5) warnings.push("You're behind at WR");
-
-  // Display each warning on its own line, or leave the area empty if none apply.
-  document.getElementById("warning").innerHTML = warnings.join("<br>");
-}
+document.getElementById("exportPdf").addEventListener("click", () => window.print());
+document.getElementById("draftProfileButton").addEventListener("click", () => {
+  const menu = document.getElementById("draftProfileMenu");
+  menu.hidden = !menu.hidden;
+});
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".guide-profile")) document.getElementById("draftProfileMenu").hidden = true;
+});

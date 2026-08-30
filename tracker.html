@@ -1,98 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fantasy & Bets Tracker</title>
-<link rel="stylesheet" href="tracker.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bet Tracker | Fantasy & Bets</title>
+  <link rel="stylesheet" href="tracker.css">
 </head>
 <body>
-<header class="site-header">
-  <div>
-    <p class="eyebrow">Personal dashboard</p>
-    <h1>Fantasy & Bets Tracker</h1>
-  </div>
-  <div class="header-actions">
-    <a class="draft-link" href="fantasy.html">Back to Draft Board</a>
-    <button id="signOutButton" class="sign-out-button" hidden>Sign out</button>
-  </div>
-</header>
-
-<main>
-  <!-- Sign in with the same account on each device to keep data synchronized. -->
-  <section id="authPanel" class="auth-panel">
-    <div>
-      <strong id="authTitle">Sign in to sync</strong>
-      <p id="authMessage">Your current entries stay on this device until you sign in.</p>
-    </div>
-    <form id="authForm" class="auth-form">
-      <label>Email<input id="authEmail" type="email" autocomplete="email" required></label>
-      <label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required></label>
-      <div class="auth-buttons">
-        <button type="submit">Sign in</button>
-        <button type="button" id="signUpButton" class="secondary-button">Create account</button>
+  <header class="site-header">
+    <a class="brand" href="tracker.html"><span class="brand-mark">B</span><span>Bet Tracker</span></a>
+    <nav class="tabs" aria-label="Primary navigation">
+      <a class="tab active" href="tracker.html">Bet Tracker</a>
+      <a class="tab" href="fantasy.html">Draft Guide</a>
+    </nav>
+    <div class="profile-wrap">
+      <button id="profileButton" class="profile-button" aria-label="Open account menu" aria-expanded="false">&#128100;</button>
+      <div id="profileMenu" class="profile-menu" hidden>
+        <strong id="authTitle">Sign in to sync</strong>
+        <p id="authMessage">Use the same account on your phone and computer.</p>
+        <form id="authForm" class="auth-form">
+          <label>Email<input id="authEmail" type="email" autocomplete="email" required></label>
+          <label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="6" required></label>
+          <button type="submit">Sign in</button>
+          <button type="button" id="signUpButton" class="secondary-button">Create account</button>
+        </form>
+        <button id="signOutButton" class="sign-out-button" hidden>Sign out</button>
       </div>
-    </form>
-  </section>
+    </div>
+  </header>
 
-  <section class="summary-grid" aria-label="Betting summary">
-    <article class="summary-card"><span>Active Leagues</span><strong id="activeLeagues">0</strong></article>
-    <article class="summary-card"><span>Open Bets</span><strong id="openBets">0</strong></article>
-    <article class="summary-card"><span>Bet Record</span><strong id="betRecord">0-0</strong></article>
-    <article class="summary-card"><span>Net Profit</span><strong id="netProfit">$0.00</strong></article>
-    <article class="summary-card"><span>ROI</span><strong id="roi">0.0%</strong></article>
-  </section>
-
-  <div class="tracker-layout">
-    <section class="panel form-panel">
-      <h2>Add Fantasy League</h2>
-      <form id="fantasyForm">
-        <label>League name<input id="leagueName" required placeholder="Sunday Home League"></label>
-        <label>Platform<input id="leaguePlatform" placeholder="Sleeper, ESPN, Yahoo..."></label>
-        <label>Team name<input id="teamName" placeholder="Gridiron Kings"></label>
-        <label>Buy-in ($)<input id="leagueBuyIn" type="number" min="0" step="0.01" value="0"></label>
-        <label>Status
-          <select id="leagueStatus"><option value="Active">Active</option><option value="Completed">Completed</option><option value="Upcoming">Upcoming</option></select>
-        </label>
-        <button type="submit">Add League</button>
-      </form>
+  <main>
+    <section class="hero">
+      <div><p class="eyebrow">Dashboard</p><h1>Your bets, leagues, and draft pulse.</h1><p>Everything stays current wherever you sign in.</p></div>
+      <a class="guide-link" href="fantasy.html">Open draft guide <span>&rarr;</span></a>
     </section>
 
-    <section class="panel form-panel">
-      <h2>Add Bet</h2>
-      <form id="betForm">
-        <label>Date<input id="betDate" type="date" required></label>
-        <label>Sport<input id="betSport" required placeholder="NFL"></label>
-        <label>Wager<input id="betWager" required placeholder="Chiefs -3.5"></label>
-        <label>Stake ($)<input id="betStake" type="number" min="0.01" step="0.01" required></label>
-        <label>American odds<input id="betOdds" type="number" required placeholder="-110"></label>
-        <label>Result
-          <select id="betResult"><option value="Pending">Pending</option><option value="Win">Win</option><option value="Loss">Loss</option><option value="Push">Push</option></select>
-        </label>
-        <button type="submit">Add Bet</button>
-      </form>
+    <section class="summary-grid" aria-label="Betting and draft summary">
+      <article class="summary-card"><span>Active leagues</span><strong id="activeLeagues">0</strong></article>
+      <article class="summary-card"><span>Open bets</span><strong id="openBets">0</strong></article>
+      <article class="summary-card"><span>Net profit</span><strong id="netProfit">$0.00</strong></article>
+      <article class="summary-card draft-summary"><span>Drafted players</span><strong id="draftShare">0%</strong><small id="draftShareDetail">0 of 0 tracked</small></article>
     </section>
-  </div>
 
-  <section class="panel table-panel">
-    <div class="section-heading"><h2>Fantasy Leagues</h2><span id="leagueCount">0 leagues</span></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>League</th><th>Platform</th><th>Team</th><th>Buy-in</th><th>Status</th><th></th></tr></thead>
-      <tbody id="leagueTableBody"></tbody></table>
+    <div class="tracker-layout">
+      <section class="panel form-panel"><div class="section-heading"><h2>Add league</h2><span>Track every roster</span></div>
+        <form id="fantasyForm"><label>League name<input id="leagueName" required placeholder="Sunday Home League"></label><label>Platform<input id="leaguePlatform" placeholder="Sleeper, ESPN, Yahoo..."></label><label>Team name<input id="teamName" placeholder="Gridiron Kings"></label><label>Buy-in ($)<input id="leagueBuyIn" type="number" min="0" step="0.01" value="0"></label><label>Status<select id="leagueStatus"><option value="Active">Active</option><option value="Completed">Completed</option><option value="Upcoming">Upcoming</option></select></label><button type="submit">Add league</button></form>
+      </section>
+      <section class="panel form-panel"><div class="section-heading"><h2>Log a bet</h2><span>Keep the record clean</span></div>
+        <form id="betForm"><label>Date<input id="betDate" type="date" required></label><label>Sport<input id="betSport" required placeholder="NFL"></label><label>Wager<input id="betWager" required placeholder="Chiefs -3.5"></label><label>Stake ($)<input id="betStake" type="number" min="0.01" step="0.01" required></label><label>American odds<input id="betOdds" type="number" required placeholder="-110"></label><label>Result<select id="betResult"><option value="Pending">Pending</option><option value="Win">Win</option><option value="Loss">Loss</option><option value="Push">Push</option></select></label><button type="submit">Add bet</button></form>
+      </section>
     </div>
-  </section>
 
-  <section class="panel table-panel">
-    <div class="section-heading"><h2>Bet History</h2><span id="betCount">0 bets</span></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>Date</th><th>Sport</th><th>Wager</th><th>Stake</th><th>Odds</th><th>Result</th><th>Profit</th><th></th></tr></thead>
-      <tbody id="betTableBody"></tbody></table>
-    </div>
-  </section>
-</main>
+    <section class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">Fantasy</p><h2>Leagues & rosters</h2></div><span id="leagueCount">0 leagues</span></div>
+      <div id="leagueList" class="league-list"></div>
+    </section>
+    <section class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">Betting</p><h2>Bet history</h2></div><span id="betCount">0 bets</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Sport</th><th>Wager</th><th>Stake</th><th>Odds</th><th>Result</th><th>Profit</th><th></th></tr></thead><tbody id="betTableBody"></tbody></table></div>
+    </section>
+  </main>
 
-<!-- Supabase client library; the publishable key in tracker.js is safe for browser use. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="tracker.js"></script>
+  <dialog id="rosterDialog" class="roster-dialog"><form id="rosterForm" method="dialog"><div class="dialog-heading"><div><p class="eyebrow">Editable roster</p><h2 id="rosterTitle">Team roster</h2></div><button type="button" id="closeRoster" class="icon-button" aria-label="Close">&times;</button></div><div id="rosterPlayers" class="roster-players"></div><div class="add-roster-player"><input id="rosterPlayerName" placeholder="Player name"><select id="rosterPlayerPosition"><option value="QB">QB</option><option value="RB">RB</option><option value="WR">WR</option><option value="TE">TE</option><option value="K">K</option><option value="DEF">DEF</option></select><button type="button" id="addRosterPlayer">Add player</button></div><p id="rosterError" class="error-message"></p><button type="submit">Save roster</button></form></dialog>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="tracker.js"></script>
 </body>
 </html>

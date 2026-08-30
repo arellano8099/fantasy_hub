@@ -12,6 +12,9 @@ create table if not exists public.leagues (
   created_at timestamptz not null default now()
 );
 
+-- Each league owns an editable player list. Existing leagues receive an empty roster.
+alter table public.leagues add column if not exists roster jsonb not null default '[]'::jsonb;
+
 create table if not exists public.bets (
   id uuid primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -44,6 +47,9 @@ create table if not exists public.draft_player_states (
   tier text,
   primary key (user_id, player_key)
 );
+alter table public.draft_player_states add column if not exists hidden boolean not null default false;
+alter table public.draft_player_states add column if not exists sort_order integer not null default 0;
+alter table public.draft_player_states add column if not exists player_data jsonb;
 create table if not exists public.draft_custom_players (
   user_id uuid not null references auth.users(id) on delete cascade,
   player_key text not null,

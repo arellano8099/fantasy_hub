@@ -1,228 +1,46 @@
-// Supabase project settings. Publishable keys are designed for browser code.
 const SUPABASE_URL = "https://yhyukqbkzwabkwzbrljq.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_VikhSOb5A_e5hyJXC9AXLw_PuGfwR9g";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-// Local storage remains a backup and is used until the user signs in.
-const LEAGUES_KEY = "fantasyTrackerLeagues";
-const BETS_KEY = "fantasyTrackerBets";
-const MIGRATION_KEY = "fantasyTrackerCloudMigration";
+const LEAGUES_KEY = "fantasyTrackerLeagues", BETS_KEY = "fantasyTrackerBets", MIGRATION_KEY = "fantasyTrackerCloudMigration";
 let leagues = JSON.parse(localStorage.getItem(LEAGUES_KEY) || "[]");
-let bets = JSON.parse(localStorage.getItem(BETS_KEY) || "[]");
-let currentUser = null;
+let bets = JSON.parse(localStorage.getItem(BETS_KEY) || "[]"), currentUser = null, editingLeague = null, expandedLeagueId = null;
 
-const currency = (value) => new Intl.NumberFormat("en-US", {
-  style: "currency", currency: "USD"
-}).format(Number(value) || 0);
+const currency = value => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+const escapeHtml = value => String(value ?? "").replace(/[&<>'"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" }[c]));
+const getProfit = bet => bet.result === "Win" ? (Number(bet.odds) > 0 ? Number(bet.stake) * Number(bet.odds) / 100 : Number(bet.stake) * 100 / Math.abs(Number(bet.odds))) : bet.result === "Loss" ? -Number(bet.stake) : 0;
+function saveLocalData(){ localStorage.setItem(LEAGUES_KEY, JSON.stringify(leagues)); localStorage.setItem(BETS_KEY, JSON.stringify(bets)); }
+function showMessage(message, isError=false){ const el=document.getElementById("authMessage"); el.textContent=message; el.classList.toggle("error-message",isError); }
+function setAuthUI(){ const signedIn=Boolean(currentUser); document.getElementById("authTitle").textContent=signedIn ? currentUser.email : "Sign in to sync"; document.getElementById("authForm").hidden=signedIn; document.getElementById("signOutButton").hidden=!signedIn; if(signedIn) showMessage("Synced across your signed-in devices."); }
+function leagueToRow(l){ return {id:l.id,user_id:currentUser.id,name:l.name,platform:l.platform||null,team:l.team||null,buy_in:l.buyIn,status:l.status,roster:l.roster||[]}; }
+function rowToLeague(r){ return {id:r.id,name:r.name,platform:r.platform,team:r.team,buyIn:Number(r.buy_in),status:r.status,roster:Array.isArray(r.roster)?r.roster:[]}; }
+function betToRow(b){ return {id:b.id,user_id:currentUser.id,bet_date:b.date,sport:b.sport,wager:b.wager,stake:b.stake,odds:b.odds,result:b.result}; }
+function rowToBet(r){ return {id:r.id,date:r.bet_date,sport:r.sport,wager:r.wager,stake:Number(r.stake),odds:Number(r.odds),result:r.result}; }
 
-function saveLocalData() {
-  localStorage.setItem(LEAGUES_KEY, JSON.stringify(leagues));
-  localStorage.setItem(BETS_KEY, JSON.stringify(bets));
+function render(){
+  const active=leagues.filter(l=>l.status==="Active").length, open=bets.filter(b=>b.result==="Pending").length, profit=bets.reduce((n,b)=>n+getProfit(b),0);
+  document.getElementById("activeLeagues").textContent=active; document.getElementById("openBets").textContent=open; document.getElementById("netProfit").textContent=currency(profit);
+  document.getElementById("leagueCount").textContent=`${leagues.length} ${leagues.length===1?"league":"leagues"}`; document.getElementById("betCount").textContent=`${bets.length} ${bets.length===1?"bet":"bets"}`;
+  document.getElementById("leagueList").innerHTML=leagues.length?leagues.map(l=>`<article class="league-card"><div class="league-summary"><div class="league-name">${escapeHtml(l.name)}<small>${escapeHtml(l.team||"No team name")} · ${escapeHtml(l.platform||"Platform not set")}</small></div><div><small>Buy-in</small><br>${currency(l.buyIn)}</div><div><small>Roster</small><br>${l.roster.length} players</div><div><span class="status ${escapeHtml(l.status.toLowerCase())}">${escapeHtml(l.status)}</span></div><div class="league-actions"><button class="outline-button roster-button" data-id="${l.id}" aria-expanded="${expandedLeagueId===l.id}">${expandedLeagueId===l.id?"Hide":"View"} roster</button><button class="delete-button" data-type="league" data-id="${l.id}">Delete</button></div></div>${expandedLeagueId===l.id?`<div class="roster-preview">${l.roster.length?l.roster.map(p=>`<span><b>${escapeHtml(p.position)}</b> ${escapeHtml(p.name)}</span>`).join(""):"<span class=\"empty-row\">No players added yet.</span>"}<button class="outline-button edit-roster" data-id="${l.id}">Edit roster</button></div>`:""}</article>`).join(""):"<div class=\"empty-row\">Add a league to begin tracking its roster.</div>";
+  document.getElementById("betTableBody").innerHTML=bets.length?bets.map(b=>`<tr><td>${escapeHtml(b.date)}</td><td>${escapeHtml(b.sport)}</td><td>${escapeHtml(b.wager)}</td><td>${currency(b.stake)}</td><td>${b.odds>0?"+":""}${b.odds}</td><td><select class="result-select" data-id="${b.id}"><option ${b.result==="Pending"?"selected":""}>Pending</option><option ${b.result==="Win"?"selected":""}>Win</option><option ${b.result==="Loss"?"selected":""}>Loss</option><option ${b.result==="Push"?"selected":""}>Push</option></select></td><td>${currency(getProfit(b))}</td><td><button class="delete-button" data-type="bet" data-id="${b.id}">Delete</button></td></tr>`).join(""):"<tr><td colspan=\"8\" class=\"empty-row\">No bets recorded yet.</td></tr>";
 }
+async function loadCloudData(){ if(!currentUser)return; const [lr,br,sr]=await Promise.all([supabaseClient.from("leagues").select("*").order("created_at",{ascending:false}),supabaseClient.from("bets").select("*").order("created_at",{ascending:false}),supabaseClient.from("draft_player_states").select("drafted")]); const error=lr.error||br.error||sr.error; if(error)throw error; leagues=lr.data.map(rowToLeague);bets=br.data.map(rowToBet); saveLocalData(); const total=sr.data.length,drafted=sr.data.filter(p=>p.drafted).length;document.getElementById("draftShare").textContent=total?`${Math.round(drafted/total*100)}%`:"0%";document.getElementById("draftShareDetail").textContent=`${drafted} of ${total} tracked`;render(); }
+async function migrateLocalData(){if(!currentUser||localStorage.getItem(MIGRATION_KEY)===currentUser.id)return;const localL=JSON.parse(localStorage.getItem(LEAGUES_KEY)||"[]"),localB=JSON.parse(localStorage.getItem(BETS_KEY)||"[]");if(localL.length){const {error}=await supabaseClient.from("leagues").upsert(localL.map(leagueToRow));if(error)throw error;}if(localB.length){const {error}=await supabaseClient.from("bets").upsert(localB.map(betToRow));if(error)throw error;}localStorage.setItem(MIGRATION_KEY,currentUser.id);}
+async function saveLeague(l){if(!currentUser){leagues.unshift(l);saveLocalData();render();return;}const {error}=await supabaseClient.from("leagues").insert(leagueToRow(l));if(error)throw error;await loadCloudData();}
+async function saveBet(b){if(!currentUser){bets.unshift(b);saveLocalData();render();return;}const {error}=await supabaseClient.from("bets").insert(betToRow(b));if(error)throw error;await loadCloudData();}
+async function updateLeagueRoster(){if(!editingLeague)return; const roster=[...document.querySelectorAll(".roster-row")].map(row=>({name:row.querySelector("input").value.trim(),position:row.querySelector("select").value})).filter(p=>p.name);editingLeague.roster=roster;if(!currentUser){saveLocalData();render();return;}const {error}=await supabaseClient.from("leagues").update({roster}).eq("id",editingLeague.id);if(error)throw error;await loadCloudData();}
+async function updateBetResult(id,result){if(!currentUser){const b=bets.find(x=>x.id===id);if(b)b.result=result;saveLocalData();render();return;}const {error}=await supabaseClient.from("bets").update({result}).eq("id",id);if(error)throw error;await loadCloudData();}
+async function deleteEntry(type,id){if(!currentUser){if(type==="league")leagues=leagues.filter(x=>x.id!==id);else bets=bets.filter(x=>x.id!==id);saveLocalData();render();return;}const {error}=await supabaseClient.from(type==="league"?"leagues":"bets").delete().eq("id",id);if(error)throw error;await loadCloudData();}
+function rosterRow(p={name:"",position:"WR"}){return `<div class="roster-row"><input value="${escapeHtml(p.name)}" placeholder="Player name"><select><option ${p.position==="QB"?"selected":""}>QB</option><option ${p.position==="RB"?"selected":""}>RB</option><option ${p.position==="WR"?"selected":""}>WR</option><option ${p.position==="TE"?"selected":""}>TE</option><option ${p.position==="K"?"selected":""}>K</option><option ${p.position==="DEF"?"selected":""}>DEF</option></select><button type="button" class="delete-button remove-roster-player">Remove</button></div>`;}
+function openRoster(id){editingLeague=leagues.find(l=>l.id===id);if(!editingLeague)return;document.getElementById("rosterTitle").textContent=`${editingLeague.team||editingLeague.name} roster`;document.getElementById("rosterPlayers").innerHTML=editingLeague.roster.map(rosterRow).join("")||"<p class=\"empty-row\">No players yet — add your first player below.</p>";document.getElementById("rosterDialog").showModal();}
 
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
-  }[character]));
-}
-
-// Profit is calculated from American odds, excluding pending bets and pushes.
-function getProfit(bet) {
-  const stake = Number(bet.stake);
-  const odds = Number(bet.odds);
-  if (bet.result === "Win") return odds > 0 ? stake * (odds / 100) : stake * (100 / Math.abs(odds));
-  if (bet.result === "Loss") return -stake;
-  return 0;
-}
-
-function showMessage(message, isError = false) {
-  const authMessage = document.getElementById("authMessage");
-  authMessage.textContent = message;
-  authMessage.classList.toggle("error-message", isError);
-}
-
-function setAuthUI() {
-  const signedIn = Boolean(currentUser);
-  document.getElementById("authTitle").textContent = signedIn ? `Syncing as ${currentUser.email}` : "Sign in to sync";
-  document.getElementById("authForm").hidden = signedIn;
-  document.getElementById("signOutButton").hidden = !signedIn;
-  if (signedIn) showMessage("Your leagues and bets are synced across devices.");
-}
-
-function render() {
-  const active = leagues.filter((league) => league.status === "Active").length;
-  const open = bets.filter((bet) => bet.result === "Pending").length;
-  const wins = bets.filter((bet) => bet.result === "Win").length;
-  const losses = bets.filter((bet) => bet.result === "Loss").length;
-  const settledBets = bets.filter((bet) => bet.result === "Win" || bet.result === "Loss");
-  const totalStake = settledBets.reduce((total, bet) => total + Number(bet.stake), 0);
-  const profit = bets.reduce((total, bet) => total + getProfit(bet), 0);
-
-  document.getElementById("activeLeagues").textContent = active;
-  document.getElementById("openBets").textContent = open;
-  document.getElementById("betRecord").textContent = `${wins}-${losses}`;
-  document.getElementById("netProfit").textContent = currency(profit);
-  document.getElementById("roi").textContent = totalStake ? `${((profit / totalStake) * 100).toFixed(1)}%` : "0.0%";
-  document.getElementById("leagueCount").textContent = `${leagues.length} ${leagues.length === 1 ? "league" : "leagues"}`;
-  document.getElementById("betCount").textContent = `${bets.length} ${bets.length === 1 ? "bet" : "bets"}`;
-
-  document.getElementById("leagueTableBody").innerHTML = leagues.length ? leagues.map((league) => `
-    <tr><td>${escapeHtml(league.name)}</td><td>${escapeHtml(league.platform || "—")}</td><td>${escapeHtml(league.team || "—")}</td><td>${currency(league.buyIn)}</td><td><span class="status ${escapeHtml(league.status.toLowerCase())}">${escapeHtml(league.status)}</span></td><td><button class="delete-button" data-type="league" data-id="${league.id}">Delete</button></td></tr>
-  `).join("") : '<tr><td colspan="6" class="empty-row">No fantasy leagues added yet.</td></tr>';
-
-  document.getElementById("betTableBody").innerHTML = bets.length ? bets.map((bet) => `
-    <tr><td>${escapeHtml(bet.date)}</td><td>${escapeHtml(bet.sport)}</td><td>${escapeHtml(bet.wager)}</td><td>${currency(bet.stake)}</td><td>${bet.odds > 0 ? "+" : ""}${bet.odds}</td><td><select class="result-select" data-id="${bet.id}" aria-label="Result for ${escapeHtml(bet.wager)}"><option value="Pending" ${bet.result === "Pending" ? "selected" : ""}>Pending</option><option value="Win" ${bet.result === "Win" ? "selected" : ""}>Win</option><option value="Loss" ${bet.result === "Loss" ? "selected" : ""}>Loss</option><option value="Push" ${bet.result === "Push" ? "selected" : ""}>Push</option></select></td><td>${currency(getProfit(bet))}</td><td><button class="delete-button" data-type="bet" data-id="${bet.id}">Delete</button></td></tr>
-  `).join("") : '<tr><td colspan="8" class="empty-row">No bets added yet.</td></tr>';
-}
-
-function leagueToRow(league) {
-  return { id: league.id, user_id: currentUser.id, name: league.name, platform: league.platform || null, team: league.team || null, buy_in: league.buyIn, status: league.status };
-}
-
-function betToRow(bet) {
-  return { id: bet.id, user_id: currentUser.id, bet_date: bet.date, sport: bet.sport, wager: bet.wager, stake: bet.stake, odds: bet.odds, result: bet.result };
-}
-
-function rowToLeague(row) {
-  return { id: row.id, name: row.name, platform: row.platform, team: row.team, buyIn: Number(row.buy_in), status: row.status };
-}
-
-function rowToBet(row) {
-  return { id: row.id, date: row.bet_date, sport: row.sport, wager: row.wager, stake: Number(row.stake), odds: Number(row.odds), result: row.result };
-}
-
-async function loadCloudData() {
-  if (!currentUser) return;
-  const [leagueResponse, betResponse] = await Promise.all([
-    supabaseClient.from("leagues").select("*").order("created_at", { ascending: false }),
-    supabaseClient.from("bets").select("*").order("created_at", { ascending: false })
-  ]);
-
-  const error = leagueResponse.error || betResponse.error;
-  if (error) throw error;
-  leagues = leagueResponse.data.map(rowToLeague);
-  bets = betResponse.data.map(rowToBet);
-  saveLocalData();
-  render();
-}
-
-// Upload existing device-only entries once, so nothing is lost when sync starts.
-async function migrateLocalData() {
-  if (!currentUser || localStorage.getItem(MIGRATION_KEY) === currentUser.id) return;
-  const localLeagues = JSON.parse(localStorage.getItem(LEAGUES_KEY) || "[]");
-  const localBets = JSON.parse(localStorage.getItem(BETS_KEY) || "[]");
-  if (localLeagues.length) {
-    const { error } = await supabaseClient.from("leagues").upsert(localLeagues.map(leagueToRow));
-    if (error) throw error;
-  }
-  if (localBets.length) {
-    const { error } = await supabaseClient.from("bets").upsert(localBets.map(betToRow));
-    if (error) throw error;
-  }
-  localStorage.setItem(MIGRATION_KEY, currentUser.id);
-}
-
-async function saveLeague(league) {
-  if (!currentUser) {
-    leagues.unshift(league); saveLocalData(); render(); return;
-  }
-  const { error } = await supabaseClient.from("leagues").insert(leagueToRow(league));
-  if (error) throw error;
-  await loadCloudData();
-}
-
-async function saveBet(bet) {
-  if (!currentUser) {
-    bets.unshift(bet); saveLocalData(); render(); return;
-  }
-  const { error } = await supabaseClient.from("bets").insert(betToRow(bet));
-  if (error) throw error;
-  await loadCloudData();
-}
-
-async function updateBetResult(id, result) {
-  if (!currentUser) {
-    const bet = bets.find((item) => item.id === id);
-    if (bet) bet.result = result;
-    saveLocalData(); render(); return;
-  }
-  const { error } = await supabaseClient.from("bets").update({ result }).eq("id", id);
-  if (error) throw error;
-  await loadCloudData();
-}
-
-async function deleteEntry(type, id) {
-  if (!currentUser) {
-    if (type === "league") leagues = leagues.filter((league) => league.id !== id);
-    if (type === "bet") bets = bets.filter((bet) => bet.id !== id);
-    saveLocalData(); render(); return;
-  }
-  const table = type === "league" ? "leagues" : "bets";
-  const { error } = await supabaseClient.from(table).delete().eq("id", id);
-  if (error) throw error;
-  await loadCloudData();
-}
-
-document.getElementById("authForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) showMessage(error.message, true);
-});
-
-document.getElementById("signUpButton").addEventListener("click", async () => {
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-  if (!email || !password) { showMessage("Enter an email and a password with at least 6 characters.", true); return; }
-  const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
-  if (error) showMessage(error.message, true);
-  else if (!data.session) showMessage("Check your email to confirm your account, then sign in.");
-});
-
-document.getElementById("signOutButton").addEventListener("click", async () => {
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) showMessage(error.message, true);
-});
-
-document.getElementById("fantasyForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    await saveLeague({ id: crypto.randomUUID(), name: document.getElementById("leagueName").value.trim(), platform: document.getElementById("leaguePlatform").value.trim(), team: document.getElementById("teamName").value.trim(), buyIn: Number(document.getElementById("leagueBuyIn").value), status: document.getElementById("leagueStatus").value });
-    event.target.reset(); document.getElementById("leagueBuyIn").value = 0;
-  } catch (error) { showMessage(`Could not save league: ${error.message}`, true); }
-});
-
-document.getElementById("betForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    await saveBet({ id: crypto.randomUUID(), date: document.getElementById("betDate").value, sport: document.getElementById("betSport").value.trim(), wager: document.getElementById("betWager").value.trim(), stake: Number(document.getElementById("betStake").value), odds: Number(document.getElementById("betOdds").value), result: document.getElementById("betResult").value });
-    event.target.reset(); document.getElementById("betDate").valueAsDate = new Date();
-  } catch (error) { showMessage(`Could not save bet: ${error.message}`, true); }
-});
-
-document.addEventListener("change", async (event) => {
-  const resultSelect = event.target.closest(".result-select");
-  if (!resultSelect) return;
-  try { await updateBetResult(resultSelect.dataset.id, resultSelect.value); }
-  catch (error) { showMessage(`Could not update bet: ${error.message}`, true); }
-});
-
-document.addEventListener("click", async (event) => {
-  const button = event.target.closest(".delete-button");
-  if (!button) return;
-  try { await deleteEntry(button.dataset.type, button.dataset.id); }
-  catch (error) { showMessage(`Could not delete entry: ${error.message}`, true); }
-});
-
-// Refresh cloud data whenever Supabase restores, starts, or ends a session.
-supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-  currentUser = session?.user || null;
-  setAuthUI();
-  if (!currentUser) { render(); return; }
-  try { await migrateLocalData(); await loadCloudData(); }
-  catch (error) { showMessage(`Cloud sync needs setup: ${error.message}`, true); }
-});
-
-document.getElementById("betDate").valueAsDate = new Date();
-render();
+document.getElementById("profileButton").addEventListener("click",()=>{const m=document.getElementById("profileMenu"),open=m.hidden;m.hidden=!open;document.getElementById("profileButton").setAttribute("aria-expanded",open);});
+document.addEventListener("click",e=>{const wrap=e.target.closest(".profile-wrap");if(!wrap)document.getElementById("profileMenu").hidden=true;});
+document.getElementById("authForm").addEventListener("submit",async e=>{e.preventDefault();const {error}=await supabaseClient.auth.signInWithPassword({email:authEmail.value.trim(),password:authPassword.value});if(error)showMessage(error.message,true);});
+document.getElementById("signUpButton").addEventListener("click",async()=>{const {data,error}=await supabaseClient.auth.signUp({email:authEmail.value.trim(),password:authPassword.value,options:{emailRedirectTo:location.href}});if(error)showMessage(error.message,true);else if(!data.session)showMessage("Check your email to confirm your account, then sign in.");});document.getElementById("signOutButton").addEventListener("click",()=>supabaseClient.auth.signOut());
+document.getElementById("fantasyForm").addEventListener("submit",async e=>{e.preventDefault();try{await saveLeague({id:crypto.randomUUID(),name:leagueName.value.trim(),platform:leaguePlatform.value.trim(),team:teamName.value.trim(),buyIn:Number(leagueBuyIn.value),status:leagueStatus.value,roster:[]});e.target.reset();leagueBuyIn.value=0;}catch(error){showMessage(`Could not save league: ${error.message}`,true);}});
+document.getElementById("betForm").addEventListener("submit",async e=>{e.preventDefault();try{await saveBet({id:crypto.randomUUID(),date:betDate.value,sport:betSport.value.trim(),wager:betWager.value.trim(),stake:Number(betStake.value),odds:Number(betOdds.value),result:betResult.value});e.target.reset();betDate.valueAsDate=new Date();}catch(error){showMessage(`Could not save bet: ${error.message}`,true);}});
+document.addEventListener("change",async e=>{if(!e.target.matches(".result-select"))return;try{await updateBetResult(e.target.dataset.id,e.target.value);}catch(error){showMessage(error.message,true);}});
+document.addEventListener("click",async e=>{const roster=e.target.closest(".roster-button"),edit=e.target.closest(".edit-roster"),del=e.target.closest(".delete-button");if(roster){expandedLeagueId=expandedLeagueId===roster.dataset.id?null:roster.dataset.id;render();return;}if(edit)return openRoster(edit.dataset.id);if(e.target.matches(".remove-roster-player")){e.target.closest(".roster-row").remove();return;}if(!del)return;try{await deleteEntry(del.dataset.type,del.dataset.id);}catch(error){showMessage(error.message,true);}});
+document.getElementById("addRosterPlayer").addEventListener("click",()=>{const name=rosterPlayerName.value.trim();if(!name)return;const empty=document.querySelector("#rosterPlayers .empty-row");if(empty)empty.remove();document.getElementById("rosterPlayers").insertAdjacentHTML("beforeend",rosterRow({name,position:rosterPlayerPosition.value}));rosterPlayerName.value="";});document.getElementById("closeRoster").addEventListener("click",()=>rosterDialog.close());document.getElementById("rosterForm").addEventListener("submit",async e=>{e.preventDefault();try{await updateLeagueRoster();rosterDialog.close();}catch(error){rosterError.textContent=`Could not save roster: ${error.message}`;}});
+supabaseClient.auth.onAuthStateChange(async(_event,session)=>{currentUser=session?.user||null;setAuthUI();if(!currentUser){render();return;}try{await migrateLocalData();await loadCloudData();}catch(error){showMessage(`Cloud sync needs setup: ${error.message}`,true);}});
+window.addEventListener("focus",()=>{if(currentUser)loadCloudData().catch(e=>showMessage(e.message,true));});setInterval(()=>{if(currentUser)loadCloudData().catch(()=>{});},15000);betDate.valueAsDate=new Date();render();
