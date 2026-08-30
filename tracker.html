@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bet Tracker | Fantasy & Bets</title>
   <link rel="stylesheet" href="tracker.css">
+  <link rel="stylesheet" href="tracker-theme.css">
 </head>
 <body>
   <header class="site-header">
@@ -35,11 +36,10 @@
       <a class="guide-link" href="fantasy.html">Open draft guide <span>&rarr;</span></a>
     </section>
 
-    <section class="summary-grid" aria-label="Betting and draft summary">
+    <section class="summary-grid" aria-label="Betting summary">
       <article class="summary-card"><span>Active leagues</span><strong id="activeLeagues">0</strong></article>
       <article class="summary-card"><span>Open bets</span><strong id="openBets">0</strong></article>
       <article class="summary-card"><span>Net profit</span><strong id="netProfit">$0.00</strong></article>
-      <article class="summary-card draft-summary"><span>Rostered players</span><strong id="draftShare">0</strong><small id="draftShareDetail">Across your leagues</small></article>
     </section>
 
     <div class="tracker-layout">
@@ -54,7 +54,7 @@
     <section class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">Fantasy</p><h2>Leagues & rosters</h2></div><span id="leagueCount">0 leagues</span></div>
       <div id="leagueList" class="league-list"></div>
     </section>
-    <section class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">Exposure</p><h2>Player roster exposure</h2></div><span>League % · buy-in %</span></div>
+    <section class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">Exposure</p><h2>Player roster exposure</h2></div><span>Top five · scroll for more</span></div>
       <div id="playerExposureList" class="exposure-list"></div>
     </section>
     <section class="panel table-panel"><div class="section-heading"><div><p class="eyebrow">Betting</p><h2>Bet history</h2></div><span id="betCount">0 bets</span></div>
