@@ -161,7 +161,13 @@ textarea {
 }
 
 .parlay-field { grid-column: 1 / -1; }
-.parlay-field span { color: var(--muted); font-weight: 400; }
+.field-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.add-leg-button { padding: 6px 9px; }
+.bet-legs { display: grid; gap: 9px; }
+.bet-leg { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.bet-leg > span { grid-column: 1 / -1; color: var(--muted); font-size: 12px; font-weight: 700; }
+.bet-leg input { grid-column: 1; }
+.remove-leg-button { padding: 10px; }
 
 .bet-history { display: grid; gap: 9px; }
 
