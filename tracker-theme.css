@@ -139,3 +139,99 @@
   .exposure-stat { align-self: start; }
   .exposure-stat small { font-size: 10px; }
 }
+
+.daily-fantasy-form {
+  margin-bottom: 18px;
+  padding: 15px;
+  border: 1px solid #2c4050;
+  border-radius: 12px;
+  background: #101922;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid #344756;
+  border-radius: 8px;
+  background: #0d151d;
+  color: var(--text);
+  font: inherit;
+}
+
+.parlay-field { grid-column: 1 / -1; }
+.parlay-field span { color: var(--muted); font-weight: 400; }
+
+.bet-history { display: grid; gap: 9px; }
+
+.bet-card {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.7fr) repeat(3, minmax(78px, .45fr)) minmax(145px, .7fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 16px;
+  border: 1px solid #2d4150;
+  border-radius: 12px;
+  background: #101922;
+}
+
+.parlay-bet { border-left: 3px solid #a987ff; }
+.bet-card-main { min-width: 0; }
+.bet-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.bet-type { padding: 3px 7px; border-radius: 999px; background: #263847; color: #c4d7e0; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.bet-type.parlay { background: #45336b; color: #dfd4ff; }
+.bet-wager { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.parlay-legs { display: grid; gap: 3px; margin: 9px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+.bet-figure { display: grid; gap: 2px; }
+.bet-figure small { font-size: 11px; font-weight: 700; }
+.bet-figure strong { font-size: 15px; letter-spacing: -.02em; }
+.potential strong { color: var(--accent); }
+.bet-result { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
+.bet-result .net-result { min-width: 68px; }
+
+@media (max-width: 1100px) {
+  .bet-card { grid-template-columns: minmax(220px, 1fr) repeat(3, auto) minmax(140px, .7fr); }
+  .bet-card > .delete-button { grid-column: 6; }
+}
+
+@media (max-width: 760px) {
+  .bet-card { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .bet-card-main { grid-column: 1 / -1; }
+  .bet-result { justify-content: flex-start; }
+  .bet-card > .delete-button { grid-column: auto; justify-self: end; }
+}
+
+.daily-fantasy-list { display: grid; gap: 8px; }
+
+.daily-fantasy-entry {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) 110px 120px 110px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #2d4150;
+  border-radius: 11px;
+  background: #101922;
+}
+
+.daily-fantasy-entry > div { min-width: 0; }
+.daily-fantasy-entry small { display: block; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.amount-input { width: 110px; padding: 6px 8px; }
+.net-result { text-align: right; }
+.net-result.win { color: #b7f4c9; }
+.net-result.loss { color: #ffc2c2; }
+
+@media (max-width: 1000px) {
+  .league-summary { grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(100px, 1fr)); }
+  .daily-fantasy-entry { grid-template-columns: minmax(200px, 1fr) 105px 110px auto; }
+  .daily-fantasy-entry .delete-button { grid-column: 4; }
+}
+
+@media (max-width: 760px) {
+  .daily-fantasy-entry { grid-template-columns: 1fr 1fr; }
+  .daily-fantasy-entry > div { grid-column: 1 / -1; }
+  .daily-fantasy-entry .delete-button { grid-column: auto; }
+  .amount-input { width: 100%; }
+  .net-result { text-align: left; }
+}

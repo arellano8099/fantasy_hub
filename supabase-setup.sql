@@ -14,6 +14,9 @@ create table if not exists public.leagues (
 
 -- Each league owns an editable player list. Existing leagues receive an empty roster.
 alter table public.leagues add column if not exists roster jsonb not null default '[]'::jsonb;
+-- Store a league's editable final result and its net win/loss amount.
+alter table public.leagues add column if not exists result text not null default 'Pending';
+alter table public.leagues add column if not exists payout numeric not null default 0;
 -- Refresh Supabase's REST schema cache so the browser can write the new column immediately.
 notify pgrst, 'reload schema';
 
@@ -29,8 +32,26 @@ create table if not exists public.bets (
   created_at timestamptz not null default now()
 );
 
+-- Daily fantasy entries share the dashboard's net-profit total.
+create table if not exists public.daily_fantasy_entries (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  entry_date date not null,
+  game_type text not null,
+  slate text not null,
+  site text,
+  result text not null default 'Pending',
+  amount numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- A bet can be a standard wager or a parlay with its legs preserved for display.
+alter table public.bets add column if not exists bet_type text not null default 'Single';
+alter table public.bets add column if not exists legs jsonb not null default '[]'::jsonb;
+
 alter table public.leagues enable row level security;
 alter table public.bets enable row level security;
+alter table public.daily_fantasy_entries enable row level security;
 
 create policy "Users manage their own leagues" on public.leagues
   for all to authenticated
@@ -41,6 +62,14 @@ create policy "Users manage their own bets" on public.bets
   for all to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+create policy "Users manage their own daily fantasy entries" on public.daily_fantasy_entries
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+-- Make the newly added columns and table available to the REST API immediately.
+notify pgrst, 'reload schema';
 
 create table if not exists public.draft_player_states (
   user_id uuid not null references auth.users(id) on delete cascade,
